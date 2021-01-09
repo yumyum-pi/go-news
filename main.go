@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -48,40 +47,41 @@ var articleL int
 var isPara bool = false
 
 // write a better error handler
-func errHandle(err error) {
+func errHandle(msg string, err error) {
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("%v: %v",msg, err)
 		os.Exit(0)
 	}
 }
 
-// get list of articles from sitemaps
-func siteMap() {
-	res, err := http.Get(htSitemap)
-	errHandle(err)
-	if res.StatusCode != 200 {
-		errHandle(fmt.Errorf("siteMap:error code from the server:%v:%v", res.StatusCode, htSitemap))
-	}
-	defer res.Body.Close()
-
-	doc, err := goquery.NewDocumentFromReader(res.Body)
-	errHandle(err)
+// get data from sitemap and return formated data
+func getSitemapData() {
+	// get the document of the sitemap
+	doc := fetchDoc(htSitemap)
 
 	a := new(article)
 
 	doc.Find("url").Each(func(i int, u *goquery.Selection){
+		// get the title from the XML document
 		t, _ := u.Find(`news\:news news\:title`).Html()
+		// the title is in cdata block
+		// <![CDATA[*title*]>
 		a.Title = t[11:len(t)-5]
 		a.URL = u.Find("loc").Text()
+
+		// add the article to the array if the total no. of articles is lower than
+		// MaxArticleCap
 		if ( i < MaxArticleCap ) {
+			// add the article pointer to the array at the index i
 			articles[i]=*a
+			// set the article length
 			articleL = i
 		}
 	})
 }
 
 func main() {
-	siteMap()
+	getSitemapData()
 	articleL++
 
 	// create a channel
@@ -190,9 +190,9 @@ func main() {
 			// use article as an input for copy command
 			cp.Stdin = strings.NewReader(t)
 			e := cp.Start()
-			errHandle(e)
+			errHandle("copy-start",e)
 			e = cp.Wait()
-			errHandle(e)
+			errHandle("copy-wait",e)
 		case "<C-d>":
 			l.ScrollHalfPageDown()
 		case "<C-u>":
@@ -231,19 +231,8 @@ func scrapeData(url string, i int, ch chan artText){
 	if url == "" {
 		return
 	}
-	// get date from the URL
-	res, err := http.Get(url)
-	errHandle(err)
-	if res.StatusCode != 200 {
-		errHandle(fmt.Errorf("scrapeData:error code from the server:%v:%v", res.StatusCode,url))
-		errHandle(fmt.Errorf("%v %v ",url, i ))
-	}
-
-	defer res.Body.Close()
-
-	// read the document
-	doc, err := goquery.NewDocumentFromReader(res.Body)
-	errHandle(err)
+	// get document for the URL
+	doc := fetchDoc(url)
 
 	var text string
 	// query the article element
