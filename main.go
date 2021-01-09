@@ -15,11 +15,11 @@ import (
 	"golang.org/x/net/html"
 )
 
-const htSitemap = "https://www.hindustantimes.com/sitemap/today"
+const htSitemap = "https://www.hindustantimes.com/sitemap/news.xml"
 const MaxArticleCap = 186
 
 // flag variables
-var paraSelector = ".storyDetail > p"
+var paraSelector = ".storyDetail > .details > p"
 var ifStats bool
 var ifHelp bool
 
@@ -184,8 +184,8 @@ func main() {
 			// copy command
 			cp := exec.Command("xclip", "-selection", "c")
 
-			t := articles[l.SelectedRow].Text()			
-		
+			t := articles[l.SelectedRow].Text()
+
 			t = strings.ReplaceAll(t,"\n\n", " ")
 			// use article as an input for copy command
 			cp.Stdin = strings.NewReader(t)
@@ -307,24 +307,3 @@ func stats(s *string) {
 		fmt.Println(i, ":", m[i])
 	}
 }
-
-
-		// temp store text
-//		var text string
-
-		// query the text element
-//		a.Find(textTag).Each(func(j int, t *goquery.Selection) {
-//			// get the text form the element
-//			text = strings.TrimSpace(t.Text())
-//			// add the text to the final text
-//			// if the text is not blank
-//			if text != "" {
-//				// add extra space if the no the 1st element
-//				if j != 0 {
-//					at.Text += ("\n\n" + text)
-//				} else {
-//					at.Text += text
-//				}
-//			}
-//
-//		})
