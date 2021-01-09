@@ -1,8 +1,8 @@
 package main
 
 import (
-	"net/http"
 	"fmt"
+	"net/http"
 
 	"github.com/PuerkitoBio/goquery"
 )
@@ -27,6 +27,6 @@ func fetchDoc(url string) (doc *goquery.Document) {
 	// create a new document from the response
 	doc, err = goquery.NewDocumentFromReader(res.Body)
 	errHandle("scrap: new document from reader", err)
-	
+
 	return
 }
