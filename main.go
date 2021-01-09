@@ -186,7 +186,7 @@ func main() {
 
 			t := articles[l.SelectedRow].Text()			
 		
-			t = strings.ReplaceAll(t,"\n", "")
+			t = strings.ReplaceAll(t,"\n\n", " ")
 			// use article as an input for copy command
 			cp.Stdin = strings.NewReader(t)
 			e := cp.Start()
