@@ -106,12 +106,12 @@ func sitemapScraper(doc *goquery.Document) {
 }
 
 // fetch all the articleList in the articleList array
-func fetchAllarticleList() {
+func fetchAllArticleList() {
 	// loop over the articleList jumping 16 items
 	for i := 0; i < articleL; i++ {
 		// go routine to fetch data
 		go func( url string, index int) {
-			fetchDoc2(url, func(doc *goquery.Document){
+			fetchDoc(url, func(doc *goquery.Document){
 				// check blank URLs
 				if url == "" {
 					return
@@ -121,7 +121,7 @@ func fetchAllarticleList() {
 				at := new(artText)
 
 				// set the index of artText for proper synchronization of the data
-				at.I =index 
+				at.I =index
 
 				// query the article element
 				q := doc.Find(paraSelector)
@@ -177,14 +177,14 @@ func syncarticleList() {
 func init() {
 	// fetch sitemap data
 	// get the document of the sitemap
-	fetchDoc2(htSitemap, sitemapScraper)
+	fetchDoc(htSitemap, sitemapScraper)
 	articleL++
 
 	// create a channel to pass the article paragraph data
 	ch = make(chan artText, 16)
 
 	// go routine to fetch all the article data
-	go fetchAllarticleList()
+	go fetchAllArticleList()
 
 	// go routine to received all the data from the request go routine
 	go syncarticleList()
