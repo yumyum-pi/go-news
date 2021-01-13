@@ -105,55 +105,58 @@ func sitemapScraper(doc *goquery.Document) {
 	})
 }
 
-// get the data from the URL and return it through the given channel
-func articleScraper(url string, i int, ch chan<- artText) {
-	at := new(artText)
-	// set the index of artText for proper synchronization of the data
-	at.I = i
-	// check blank URLs
-	if url == "" {
-		return
-	}
-	// get document for the URL
-	doc := fetchDoc(url)
-
-	var text string
-
-	// query the article element
-	q := doc.Find(paraSelector)
-
-	if q.Length() <= 0 {
-		// create an error msg
-		at.Text = fmt.Sprintf("error: %v: 0 result from \"%v \"(selector) ", url, paraSelector)
-		// send the error msg
-		ch <- *at
-		return
-	}
-
-	q.Each(func(i int, t *goquery.Selection) {
-		text = strings.TrimSpace(t.Text())
-		// add the text to the final text
-		// if the text is not blank
-		if text != "" {
-			// add extra space if the no the 1st element
-			if i != 0 {
-				at.Text += ("\n\n" + text)
-			} else {
-				at.Text += text
-			}
-		}
-	})
-
-	// send data back to the channel
-	ch <- *at
-}
-
 // fetch all the articleList in the articleList array
 func fetchAllarticleList() {
 	// loop over the articleList jumping 16 items
 	for i := 0; i < articleL; i++ {
 		// go routine to fetch data
-		go articleScraper(articleList[i].URL, i, ch)
+		go func( url string, index int) {
+			fetchDoc2(url, func(doc *goquery.Document){
+				// check blank URLs
+				if url == "" {
+					return
+				}
+
+				var text string
+				at := new(artText)
+
+				// set the index of artText for proper synchronization of the data
+				at.I =index 
+
+				// query the article element
+				q := doc.Find(paraSelector)
+
+				// check the no. of elements
+				if q.Length() <= 0 {
+					// create an error msg
+					at.Text = fmt.Sprintf(
+						"error: %v: 0 result from \"%v \"(selector) ",
+						url,
+						paraSelector)
+					// send the error msg
+					ch <- *at
+					return
+				}
+
+				// scrap the data
+				q.Each(func(j int, t *goquery.Selection) {
+					text = strings.TrimSpace(t.Text())
+					// add the text to the final text
+					// if the text is not blank
+					if text != "" {
+						// add extra space if the no the 1st element
+						if j != 0 {
+							at.Text += ("\n\n" + text)
+						} else {
+							at.Text += text
+						}
+					}
+				})
+
+				// send data back to the channel
+				ch <- *at
+			})
+		} (articleList[i].URL, i)
 
 		// sleep for 2 seconds to avoid rejection from the website
 		if i%16 == 0 {
