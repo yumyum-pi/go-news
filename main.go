@@ -223,7 +223,7 @@ func main() {
 	p := widgets.NewParagraph()
 
 	// set information about the list
-	l.Title = " News articleList List "
+	l.Title = "List "
 	l.Rows = articleListLS // assigning the data
 	// setting the style of the widget
 	l.TextStyle = ui.NewStyle(ui.ColorYellow)
@@ -235,7 +235,7 @@ func main() {
 	l.SetRect(0, 0, hw, h)
 
 	// set information about the paragraph
-	p.Title = " articleList "
+	p.Title = "Article"
 	p.Text = articleList[0].Text()
 	p.WrapText = true
 	// setting the size of the widget
