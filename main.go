@@ -37,11 +37,11 @@ func (a *article) Text() string {
 	return fmt.Sprintf("%s\n%s", a.Title, a.Para)
 }
 
-// array of articles
+// array of articleList
 // this is a fixed sized array
-var articles [MaxArticleCap]article
+var articleList [MaxArticleCap]article
 
-// no. of articles in the array
+// no. of articleList in the array
 var articleL int
 
 // struct to store article text and index
@@ -56,6 +56,8 @@ type artText struct {
 // check if focused on paragraph
 var isPara bool = false
 
+var ch chan artText
+
 // exit the program if the err is not nil
 func errHandle(msg string, err error) {
 	if err != nil {
@@ -64,27 +66,39 @@ func errHandle(msg string, err error) {
 	}
 }
 
-// get data from sitemap and return formated data
-func getSitemapData() {
-	// get the document of the sitemap
-	doc := fetchDoc(htSitemap)
+// get the list of articles from sitemap
+func sitemapScraper(doc *goquery.Document) {
+	// constants
+	const elemS = "url" // element selector
+	const titleS = `news\:news news\:title` // title selector
+	const urlS = "loc" // URL selector
 
 	a := new(article)
 
-	// query the url element
-	doc.Find("url").Each(func(i int, u *goquery.Selection) {
+	// check the no. of elements
+	q := doc.Find(elemS)
+
+	if q.Length() <= 0 {
+		// create an error msg
+		errHandle("", fmt.Errorf("error: %v: 0 result from \"%v \"(selector) ", "sitemapScraper", elemS))
+		return
+	}
+
+	// loop thought each element and extract data
+	q.Each(func(i int, u *goquery.Selection) {
 		// get the title from the XML document
-		t, _ := u.Find(`news\:news news\:title`).Html()
+		t, _ := u.Find(titleS).Html()
 		// the title is in cdata block
+		// which is not parsed by the, need to manually select the text
 		// <![CDATA[*title*]>
 		a.Title = t[11 : len(t)-5]
-		a.URL = u.Find("loc").Text()
+		a.URL = u.Find(urlS).Text()
 
-		// add the article to the array if the total no. of articles is lower than
+		// add the article to the array if the total no. of articleList is lower than
 		// MaxArticleCap
 		if i < MaxArticleCap {
 			// add the article pointer to the array at the index i
-			articles[i] = *a
+			articleList[i] = *a
 			// set the article length
 			articleL = i
 		}
@@ -92,7 +106,7 @@ func getSitemapData() {
 }
 
 // get the data from the URL and return it through the given channel
-func scrapeData(url string, i int, ch chan<- artText) {
+func articleScraper(url string, i int, ch chan<- artText) {
 	at := new(artText)
 	// set the index of artText for proper synchronization of the data
 	at.I = i
@@ -134,12 +148,12 @@ func scrapeData(url string, i int, ch chan<- artText) {
 	ch <- *at
 }
 
-// fetch all the articles in the articles array
-func fetchAllArticles(ch chan<- artText) {
-	// loop over the articles jumping 16 items
+// fetch all the articleList in the articleList array
+func fetchAllarticleList() {
+	// loop over the articleList jumping 16 items
 	for i := 0; i < articleL; i++ {
 		// go routine to fetch data
-		go scrapeData(articles[i].URL, i, ch)
+		go articleScraper(articleList[i].URL, i, ch)
 
 		// sleep for 2 seconds to avoid rejection from the website
 		if i%16 == 0 {
@@ -148,28 +162,29 @@ func fetchAllArticles(ch chan<- artText) {
 	}
 }
 
-// sync data of all the articles in the article array
-func syncArticles(ch <-chan artText) {
+// sync data of all the articleList in the article array
+func syncarticleList() {
 	// wait for the data
 	for at := range ch {
 		// add the data at the proper index
-		articles[at.I].Para = at.Text
+		articleList[at.I].Para = at.Text
 	}
 }
 
 func init() {
 	// fetch sitemap data
-	getSitemapData()
+	// get the document of the sitemap
+	fetchDoc2(htSitemap, sitemapScraper)
 	articleL++
 
 	// create a channel to pass the article paragraph data
-	ch := make(chan artText, 16)
+	ch = make(chan artText, 16)
 
 	// go routine to fetch all the article data
-	go fetchAllArticles(ch)
+	go fetchAllarticleList()
 
 	// go routine to received all the data from the request go routine
-	go syncArticles(ch)
+	go syncarticleList()
 }
 
 func main() {
@@ -189,15 +204,15 @@ func main() {
 	}
 
 	// array of list for article titles
-	articlesLS := make([]string, articleL)
+	articleListLS := make([]string, articleL)
 	// add titles to the array
-	for i, a := range articles {
+	for i, a := range articleList {
 		// check if empty
 		if a.Title == "" {
 			break
 		}
 		// concatenate the index and the title
-		articlesLS[i] = fmt.Sprintf("%03d  %s", i, a.Title)
+		articleListLS[i] = fmt.Sprintf("%03d  %s", i, a.Title)
 	}
 
 	// create new widgets
@@ -205,8 +220,8 @@ func main() {
 	p := widgets.NewParagraph()
 
 	// set information about the list
-	l.Title = " News Articles List "
-	l.Rows = articlesLS // assigning the data
+	l.Title = " News articleList List "
+	l.Rows = articleListLS // assigning the data
 	// setting the style of the widget
 	l.TextStyle = ui.NewStyle(ui.ColorYellow)
 	l.BorderStyle = ui.NewStyle(ui.ColorGreen)
@@ -217,8 +232,8 @@ func main() {
 	l.SetRect(0, 0, hw, h)
 
 	// set information about the paragraph
-	p.Title = " Articles "
-	p.Text = articles[0].Text()
+	p.Title = " articleList "
+	p.Text = articleList[0].Text()
 	p.WrapText = true
 	// setting the size of the widget
 	p.SetRect(hw, 0, w, h)
@@ -241,12 +256,12 @@ func main() {
 		case "j", "<Down>":
 			if !isPara {
 				l.ScrollDown()
-				p.Text = articles[l.SelectedRow].Text()
+				p.Text = articleList[l.SelectedRow].Text()
 			}
 		case "k", "<Up>":
 			if !isPara {
 				l.ScrollUp()
-				p.Text = articles[l.SelectedRow].Text()
+				p.Text = articleList[l.SelectedRow].Text()
 			}
 		case "l", "<Right>":
 			// check if para is not selected
@@ -281,7 +296,7 @@ func main() {
 			cp := exec.Command("xclip", "-selection", "c")
 
 			// get the article text
-			t := articles[l.SelectedRow].Text()
+			t := articleList[l.SelectedRow].Text()
 			t = strings.ReplaceAll(t, "\n\n", " ") // replace the new lines
 
 			// use article as an input for copy command
