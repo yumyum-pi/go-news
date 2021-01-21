@@ -23,7 +23,7 @@ go install
 go-news
 ```
 
-[![Product Name Screen Shot][product-screenshot]](https://github.com/yumyum-pi/go-news/blob/master/images/go-news-01.jpg?raw=true) 
+[![Product Name Screen Shot][product-screenshot]](./images/go-news-01.jpg?raw=true) 
 ## Usage
 ```bash
 go-news
