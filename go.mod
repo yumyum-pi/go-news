@@ -1,4 +1,4 @@
-module github.com/yumyum-pi/news
+module github.com/yumyum-pi/go-news
 
 go 1.15
 
