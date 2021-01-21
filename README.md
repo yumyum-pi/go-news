@@ -23,7 +23,7 @@ go install
 go-news
 ```
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
+[![Product Name Screen Shot][product-screenshot]]( images/go-news.jpg ) 
 ## Usage
 ```bash
 go-news
