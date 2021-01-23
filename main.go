@@ -11,10 +11,10 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
+	mui "github.com/yumyum-pi/go-news/pkg/ui"
 )
 
 const htSitemap = "https://www.hindustantimes.com/sitemap/news.xml"
-const MaxArticleCap = 186
 
 // flag variables
 var paraSelector = ".storyDetails > .detail > p"
@@ -23,9 +23,10 @@ var ifHelp bool
 
 // struct article information
 type article struct {
-	Title string
-	URL   string
-	Para  string
+	Title         string
+	URL           string
+	Para          string
+	ScrollPositin int
 }
 
 // Text return a concatenated string of article title and paragraph
@@ -36,6 +37,9 @@ func (a *article) Text() string {
 
 	return fmt.Sprintf("%s\n%s", a.Title, a.Para)
 }
+
+// MaxArticleCap defines the maximum capacity of the article array
+const MaxArticleCap = 186
 
 // array of articleList
 // this is a fixed sized array
@@ -69,9 +73,9 @@ func errHandle(msg string, err error) {
 // get the list of articles from sitemap
 func sitemapScraper(doc *goquery.Document) {
 	// constants
-	const elemS = "url" // element selector
+	const elemS = "url"                     // element selector
 	const titleS = `news\:news news\:title` // title selector
-	const urlS = "loc" // URL selector
+	const urlS = "loc"                      // URL selector
 
 	a := new(article)
 
@@ -110,8 +114,8 @@ func fetchAllArticleList() {
 	// loop over the articleList jumping 16 items
 	for i := 0; i < articleL; i++ {
 		// go routine to fetch data
-		go func( url string, index int) {
-			fetchDoc(url, func(doc *goquery.Document){
+		go func(url string, index int) {
+			fetchDoc(url, func(doc *goquery.Document) {
 				// check blank URLs
 				if url == "" {
 					return
@@ -121,7 +125,7 @@ func fetchAllArticleList() {
 				at := new(artText)
 
 				// set the index of artText for proper synchronization of the data
-				at.I =index
+				at.I = index
 
 				// query the article element
 				q := doc.Find(paraSelector)
@@ -156,7 +160,7 @@ func fetchAllArticleList() {
 				// send data back to the channel
 				ch <- *at
 			})
-		} (articleList[i].URL, i)
+		}(articleList[i].URL, i)
 
 		// sleep for 2 seconds to avoid rejection from the website
 		if i%16 == 0 {
@@ -220,7 +224,7 @@ func main() {
 
 	// create new widgets
 	l := widgets.NewList()
-	p := widgets.NewParagraph()
+	p := mui.NewParagraph()
 
 	// set information about the list
 	l.Title = "List "
@@ -236,7 +240,7 @@ func main() {
 
 	// set information about the paragraph
 	p.Title = "Article"
-	p.Text = articleList[0].Text()
+	p.SetPara(articleList[0].Text(), 0)
 	p.WrapText = true
 	// setting the size of the widget
 	p.SetRect(hw, 0, w, h)
@@ -259,12 +263,18 @@ func main() {
 		case "j", "<Down>":
 			if !isPara {
 				l.ScrollDown()
-				p.Text = articleList[l.SelectedRow].Text()
+				p.SetPara(articleList[l.SelectedRow].Text(), 0)
+				p.ScrollPosition = articleList[l.SelectedRow].ScrollPositin
+			} else {
+				p.ScrollDown()
 			}
 		case "k", "<Up>":
 			if !isPara {
 				l.ScrollUp()
-				p.Text = articleList[l.SelectedRow].Text()
+				p.SetPara(articleList[l.SelectedRow].Text(), 0)
+				p.ScrollPosition = articleList[l.SelectedRow].ScrollPositin
+			} else {
+				p.ScrollUp()
 			}
 		case "l", "<Right>":
 			// check if para is not selected
