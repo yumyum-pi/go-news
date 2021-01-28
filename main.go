@@ -27,6 +27,9 @@ const listWidth = 40
 // struct article information
 type article struct {
 	Title         string
+	Date          string
+	Source        string
+	Language      string
 	URL           string
 	Para          string
 	ScrollPositin int
@@ -34,11 +37,19 @@ type article struct {
 
 // Text return a concatenated string of article title and paragraph
 func (a *article) Text() string {
+	t := fmt.Sprintf(
+		"%s\nTime:%s    Date:%s    Source:%s    Language:%s",
+		a.Title,
+		a.Date[11:19],
+		a.Date[0:10],
+		a.Source,
+		a.Language,
+	)
 	if (a).Para == "" {
-		return fmt.Sprintf("%s\nLoading", a.Title)
+		return fmt.Sprintf("%s\n\nLoading...", t)
 	}
 
-	return fmt.Sprintf("%s\n%s", a.Title, a.Para)
+	return fmt.Sprintf("%s\n\n%s", t, a.Para)
 }
 
 // MaxArticleCap defines the maximum capacity of the article array
@@ -76,9 +87,12 @@ func errHandle(msg string, err error) {
 // get the list of articles from sitemap
 func sitemapScraper(doc *goquery.Document) {
 	// constants
-	const elemS = "url"                     // element selector
-	const titleS = `news\:news news\:title` // title selector
-	const urlS = "loc"                      // URL selector
+	const elemS = "url"                                            // element selector
+	const titleS = `news\:news news\:title`                        // title selector
+	const pubS = `news\:news news\:publication news\:name`         // title selector
+	const pubLangS = `news\:news news\:publication news\:language` // title selector
+	const pubDate = `news\:news news\:publication_date`            // title selector
+	const urlS = "loc"                                             // URL selector
 
 	a := new(article)
 
@@ -100,6 +114,9 @@ func sitemapScraper(doc *goquery.Document) {
 		// <![CDATA[*title*]>
 		a.Title = t[11 : len(t)-5]
 		a.URL = u.Find(urlS).Text()
+		a.Date = u.Find(pubDate).Text()
+		a.Language = u.Find(pubLangS).Text()
+		a.Source = u.Find(pubS).Text()
 
 		// add the article to the array if the total no. of articleList is lower than
 		// MaxArticleCap
