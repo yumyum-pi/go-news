@@ -21,6 +21,9 @@ var paraSelector = ".storyDetails > .detail > p"
 var ifStats bool
 var ifHelp bool
 
+// list width
+const listWidth = 40
+
 // struct article information
 type article struct {
 	Title         string
@@ -194,6 +197,10 @@ func init() {
 	go syncarticleList()
 }
 
+func getColumnWidth(w int) int {
+	return w - listWidth
+}
+
 func main() {
 	// initialize the ui
 	if err := ui.Init(); err != nil {
@@ -203,12 +210,6 @@ func main() {
 
 	// get the dimensions
 	w, h := ui.TerminalDimensions()
-	hw := w/2 - 2
-	//	hh := h/2 - 2
-
-	if hw > 80 {
-		hw = 80
-	}
 
 	// array of list for article titles
 	articleListLS := make([]string, articleL)
@@ -219,7 +220,7 @@ func main() {
 			break
 		}
 		// concatenate the index and the title
-		articleListLS[i] = fmt.Sprintf("%03d  %s", i, a.Title)
+		articleListLS[i] = a.Title
 	}
 
 	// create new widgets
@@ -236,14 +237,14 @@ func main() {
 
 	l.WrapText = false
 	// setting the size of the widget
-	l.SetRect(0, 0, hw, h)
+	l.SetRect(0, 0, listWidth, h)
 
 	// set information about the paragraph
 	p.Title = "Article"
 	p.SetPara(articleList[0].Text(), 0)
 	p.WrapText = true
 	// setting the size of the widget
-	p.SetRect(hw, 0, w, h)
+	p.SetRect(listWidth, 0, w, h)
 
 	// render the UI
 	ui.Render(l, p)
@@ -336,6 +337,11 @@ func main() {
 			l.ScrollTop()
 		case "G", "<End>":
 			l.ScrollBottom()
+		case "<Resize>":
+			payload := e.Payload.(ui.Resize)
+			p.SetRect(listWidth, 0, payload.Width, payload.Height)
+			l.SetRect(0, 0, listWidth, payload.Height)
+			ui.Clear()
 		}
 
 		if previousKey == "g" {
