@@ -24,34 +24,6 @@ var ifHelp bool
 // list width
 const listWidth = 40
 
-// struct article information
-type article struct {
-	Title         string
-	Date          string
-	Source        string
-	Language      string
-	URL           string
-	Para          string
-	ScrollPositin int
-}
-
-// Text return a concatenated string of article title and paragraph
-func (a *article) Text() string {
-	t := fmt.Sprintf(
-		"%s\nTime:%s    Date:%s    Source:%s    Language:%s",
-		a.Title,
-		a.Date[11:19],
-		a.Date[0:10],
-		a.Source,
-		a.Language,
-	)
-	if (a).Para == "" {
-		return fmt.Sprintf("%s\n\nLoading...", t)
-	}
-
-	return fmt.Sprintf("%s\n\n%s", t, a.Para)
-}
-
 // MaxArticleCap defines the maximum capacity of the article array
 const MaxArticleCap = 186
 
