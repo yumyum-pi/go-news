@@ -192,7 +192,7 @@ func main() {
 			cp := exec.Command("xclip", "-selection", "c")
 
 			// get the article text
-			t := articleList[l.SelectedRow].Text()
+			t := articleList[l.SelectedRow].Para
 			t = strings.ReplaceAll(t, "\n\n", " ") // replace the new lines
 
 			// use article as an input for copy command
